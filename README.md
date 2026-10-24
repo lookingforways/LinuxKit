@@ -34,7 +34,7 @@
 - Ejercicios de detección (escaneos, rate limiting, reglas IDS/IPS) diseñados para practicarse sobre logs y entornos propios, sin generar tráfico ofensivo.
 
 ### 🤝 Colaboración
-- La ruta `/proponer-comando` invita a quienes quieran colaborar a escribir a **hola@aulaciber.top**. Ya no existe formulario público ni panel de administración: las propuestas se revisan por correo.
+- La ruta `/proponer-comando` invita a quienes quieran colaborar a escribir a **hola@aulaciber.top**. La web no recibe datos de nadie: no hay formulario ni panel de administración, y las reglas de Firestore deniegan toda escritura.
 
 ---
 
@@ -129,7 +129,9 @@ pnpm build   # genera el sitio estático en out/
 
 El sitio solo usa el SDK **cliente** de Firebase y únicamente **lee** la colección `commands` (comandos aprobados, lectura pública) desde `/biblioteca`.
 
-Las reglas (`firestore.rules`) también contemplan la colección `commandProposals` y un administrador por UID / colección `admins/`, heredadas del flujo anterior de propuestas, que ya no tiene interfaz en esta versión. Revisa y adapta `firestore.rules` a tu proyecto antes de usar tu propia instancia.
+Las reglas (`firestore.rules`) permiten **solo lectura pública de `commands`** y deniegan todo lo demás (incluidas `commandProposals` y `admins`, ya sin uso). Nadie puede escribir desde la web ni desde la API; los comandos se gestionan a mano desde la consola de Firebase. Publica estas reglas en tu proyecto (`firebase deploy --only firestore:rules` o desde la consola).
+
+Recomendado en Google Cloud: restringir la API key por referrer HTTP a `https://linuxkit.aulaciber.top/*` y limitarla a la API de Firestore.
 
 ---
 
