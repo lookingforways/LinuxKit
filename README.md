@@ -17,7 +17,7 @@
 - Botón de copiado rápido al portapapeles.
 
 ### 📖 Biblioteca ampliada
-- Colección de comandos agrupados por tema, combinando contenido estático con comandos aprobados publicados en Firestore (lectura pública desde el navegador).
+- Colección de comandos agrupados por tema, combinando contenido estático con comandos revisados que se mantienen en `data/approved-commands.json` (solo lectura).
 
 ### 🧩 Casos de uso guiados
 - Escenarios reales paso a paso (por ejemplo, *"Servidor bajo ataque"*, *"Endurecer SSH"*) que guían al usuario por un flujo de diagnóstico y respuesta.
@@ -34,7 +34,7 @@
 - Ejercicios de detección (escaneos, rate limiting, reglas IDS/IPS) diseñados para practicarse sobre logs y entornos propios, sin generar tráfico ofensivo.
 
 ### 🤝 Colaboración
-- La ruta `/proponer-comando` invita a quienes quieran colaborar a escribir a **hola@aulaciber.top**. La web no recibe datos de nadie: no hay formulario ni panel de administración, y las reglas de Firestore deniegan toda escritura.
+- La ruta `/proponer-comando` invita a quienes quieran colaborar a escribir a **hola@aulaciber.top**. La web es 100 % estática y no recibe datos de nadie: no hay formularios, cuentas, paneles de administración ni servicios externos. Los contenidos se actualizan solo desde el repositorio.
 
 ---
 
@@ -42,7 +42,7 @@
 
 - **Next.js 16** (App Router) + **React 19** + **TypeScript**
 - **Tailwind CSS 4** + **shadcn/ui**
-- **Firebase** (SDK cliente, solo lectura de Firestore) para la biblioteca dinámica
+- **Export estático** (`output: 'export'`): sin backend ni servicios externos
 - **lucide-react** para iconografía
 - Gestor de paquetes: **pnpm**
 
@@ -62,12 +62,10 @@ LinuxKit/
 │   ├── proponer-comando/         # Invitación a colaborar por correo
 │   └── seguridad/                # Buenas prácticas + generador nmap
 ├── components/ui/                # Componentes shadcn/ui
-├── .env.example                  # Variables NEXT_PUBLIC_FIREBASE_* (vacías)
+├── data/approved-commands.json   # Comandos revisados de la biblioteca (solo lectura)
 ├── lib/
-│   ├── firebase.ts               # Configuración e inicialización de Firebase
 │   └── utils.ts
 ├── public/                       # Íconos y estáticos
-├── firestore.rules               # Reglas de seguridad de Firestore
 ├── package.json
 └── README.md
 ```
@@ -91,21 +89,9 @@ pnpm install
 npm install
 ```
 
-### 3. Configurar variables de entorno
+### 3. Variables de entorno
 
-Crea un archivo `.env.local` en la raíz con tus credenciales de Firebase (necesarias para la biblioteca dinámica; `NEXT_PUBLIC_FIREBASE_API_KEY` es obligatoria para compilar):
-
-```bash
-NEXT_PUBLIC_FIREBASE_API_KEY=
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
-NEXT_PUBLIC_FIREBASE_APP_ID=
-NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=
-```
-
-> Las variables `NEXT_PUBLIC_*` se **incrustan en el build** (son públicas por diseño en el SDK cliente de Firebase). Si `NEXT_PUBLIC_FIREBASE_API_KEY` no está definida, `next build` en producción falla con un mensaje claro en lugar de generar un sitio con la biblioteca dinámica rota.
+No se necesita ninguna.
 
 ### 4. Ejecutar en modo desarrollo
 
@@ -125,13 +111,17 @@ pnpm build   # genera el sitio estático en out/
 
 ---
 
-## 🔥 Configuración de Firebase
+## 📚 Comandos aprobados de la biblioteca
 
-El sitio solo usa el SDK **cliente** de Firebase y únicamente **lee** la colección `commands` (comandos aprobados, lectura pública) desde `/biblioteca`.
+`data/approved-commands.json` es una lista de grupos con esta forma; se incrusta en el build y se muestra en `/biblioteca/` junto a los grupos fijos:
 
-Las reglas (`firestore.rules`) permiten **solo lectura pública de `commands`** y deniegan todo lo demás (incluidas `commandProposals` y `admins`, ya sin uso). Nadie puede escribir desde la web ni desde la API; los comandos se gestionan a mano desde la consola de Firebase. Publica estas reglas en tu proyecto (`firebase deploy --only firestore:rules` o desde la consola).
+```json
+[
+  { "title": "Categoría", "commands": [["comando", "Descripción breve"]] }
+]
+```
 
-Recomendado en Google Cloud: restringir la API key por referrer HTTP a `https://linuxkit.aulaciber.top/*` y limitarla a la API de Firestore.
+Los comandos nuevos se añaden editando este archivo en el repositorio. El sitio no envía ni recibe datos de nadie.
 
 ---
 
@@ -144,11 +134,9 @@ Sitio **100 % estático** (Next.js con `output: 'export'` y `trailingSlash: true
 | Script de compilación | `npx --yes pnpm@12.3.4 install --frozen-lockfile && npx pnpm@12.3.4 build` |
 | Directorio de publicación | `out` |
 | Runtime | Ninguno |
-| Variables de entorno | `NEXT_PUBLIC_FIREBASE_API_KEY` (obligatoria), `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`, `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID`, `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID` |
+| Variables de entorno | Ninguna |
 
 Requisitos del entorno de compilación: Node.js 20.9 o superior (Next.js 16). Cada ruta se genera como `<ruta>/index.html` dentro de `out/`.
-
-Para compilar es **obligatoria** `NEXT_PUBLIC_FIREBASE_API_KEY`; si falta, el build falla a propósito. Valores de Firebase: consola de Firebase → Configuración del proyecto → Tus apps (SDK web). No inventes ni reutilices claves de otro proyecto.
 
 ---
 
