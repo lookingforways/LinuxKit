@@ -5,7 +5,7 @@ import { ArrowRight, Copy, ShieldCheck, Terminal } from 'lucide-react'
 import { useState } from 'react'
 
 const exercises = [
-  { title: 'Detectar un escaneo', description: 'Busca patrones de reconocimiento en logs sin generar tráfico ofensivo.', command: "sudo grep -Ei 'Nmap|scan|SYN' /var/log/ suricata/eve.json 2>/dev/null | tail -50", note: 'Úsalo sobre logs de tu laboratorio.' },
+  { title: 'Detectar un escaneo', description: 'Busca patrones de reconocimiento en logs sin generar tráfico ofensivo.', command: "sudo grep -Ei 'Nmap|scan|SYN' /var/log/suricata/eve.json 2>/dev/null | tail -50", note: 'Úsalo sobre logs de tu laboratorio.' },
   { title: 'Validar rate limiting', description: 'Comprueba la configuración existente y sus contadores desde el servidor.', command: 'sudo journalctl -u {{servicio}} --since "15 minutes ago" | grep -Ei "429|rate.?limit|thrott"', note: 'No genera solicitudes automáticamente.' },
   { title: 'Revisar reglas IDS/IPS', description: 'Lista reglas cargadas y verifica que el motor de detección esté activo.', command: 'sudo systemctl status {{servicio_ids}} --no-pager; sudo suricata --list-runmodes 2>/dev/null', note: 'Cambia servicio_ids por el servicio instalado.' },
   { title: 'Bloquear una IP de laboratorio', description: 'Aplica una regla de contención a una IP de prueba documentada.', command: 'sudo ufw deny from {{ip_laboratorio}} comment "laboratorio controlado"', note: 'Confirma la IP y ten una regla de reversión preparada.' },
