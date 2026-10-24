@@ -2,9 +2,9 @@
 
 ### Plataforma práctica e interactiva de comandos Linux orientada a ciberseguridad y redes
 
-**LinuxKit** es una herramienta web educativa para aprender, consultar y practicar comandos Linux. Combina un glosario de comandos con casos de uso guiados, un generador de comandos personalizado y un flujo de propuestas moderado por un administrador, pensado para estudiantes, administradores de sistemas, desarrolladores y cualquier persona que empiece a trabajar con Linux, servidores, VPS y ciberseguridad.
+**LinuxKit** es una herramienta web educativa para aprender, consultar y practicar comandos Linux. Combina un glosario de comandos con casos de uso guiados, un generador de comandos personalizado y una biblioteca ampliada, pensado para estudiantes, administradores de sistemas, desarrolladores y cualquier persona que empiece a trabajar con Linux, servidores, VPS y ciberseguridad.
 
-🔗 **Demo:** [linux-lexicon.vercel.app](https://linux-lexicon.vercel.app)
+🔗 **Sitio:** [linuxkit.aulaciber.top](https://linuxkit.aulaciber.top)
 
 ---
 
@@ -17,7 +17,7 @@
 - Botón de copiado rápido al portapapeles.
 
 ### 📖 Biblioteca ampliada
-- Colección de comandos agrupados por tema, combinando contenido estático con comandos aprobados dinámicamente desde Firestore.
+- Colección de comandos agrupados por tema, combinando contenido estático con comandos aprobados publicados en Firestore (lectura pública desde el navegador).
 
 ### 🧩 Casos de uso guiados
 - Escenarios reales paso a paso (por ejemplo, *"Servidor bajo ataque"*, *"Endurecer SSH"*) que guían al usuario por un flujo de diagnóstico y respuesta.
@@ -33,13 +33,8 @@
 ### 🎯 Ataques controlados
 - Ejercicios de detección (escaneos, rate limiting, reglas IDS/IPS) diseñados para practicarse sobre logs y entornos propios, sin generar tráfico ofensivo.
 
-### 📝 Propuesta de comandos
-- Cualquier persona puede sugerir un nuevo comando desde `/proponer-comando`, sin necesidad de crear cuenta.
-- Cada propuesta queda en estado `pending` hasta ser revisada.
-
-### 🔐 Panel de administración
-- Ruta `/admin/comandos` protegida con Firebase Auth.
-- Permite aprobar o rechazar propuestas; al aprobarlas se publican automáticamente en el glosario público.
+### 🤝 Colaboración
+- La ruta `/proponer-comando` invita a quienes quieran colaborar a escribir a **hola@aulaciber.top**. Ya no existe formulario público ni panel de administración: las propuestas se revisan por correo.
 
 ---
 
@@ -47,8 +42,7 @@
 
 - **Next.js 16** (App Router) + **React 19** + **TypeScript**
 - **Tailwind CSS 4** + **shadcn/ui**
-- **Firebase** (Authentication + Firestore) como backend
-- **Vercel Analytics**
+- **Firebase** (SDK cliente, solo lectura de Firestore) para la biblioteca dinámica
 - **lucide-react** para iconografía
 - Gestor de paquetes: **pnpm**
 
@@ -61,14 +55,14 @@ LinuxKit/
 ├── app/
 │   ├── page.tsx                  # Glosario principal
 │   ├── layout.tsx
-│   ├── admin/comandos/           # Panel de administración (login + moderación)
 │   ├── ataques-controlados/      # Ejercicios de detección
 │   ├── biblioteca/               # Biblioteca ampliada de comandos
 │   ├── casos/                    # Casos de uso guiados
 │   ├── laboratorio/              # Generador de comandos personalizado
-│   ├── proponer-comando/         # Formulario público de propuestas
+│   ├── proponer-comando/         # Invitación a colaborar por correo
 │   └── seguridad/                # Buenas prácticas + generador nmap
 ├── components/ui/                # Componentes shadcn/ui
+├── .env.example                  # Variables NEXT_PUBLIC_FIREBASE_* (vacías)
 ├── lib/
 │   ├── firebase.ts               # Configuración e inicialización de Firebase
 │   └── utils.ts
@@ -99,7 +93,7 @@ npm install
 
 ### 3. Configurar variables de entorno
 
-Crea un archivo `.env.local` en la raíz con tus credenciales de Firebase (necesarias para el glosario dinámico, las propuestas y el panel de administración):
+Crea un archivo `.env.local` en la raíz con tus credenciales de Firebase (necesarias para la biblioteca dinámica; `NEXT_PUBLIC_FIREBASE_API_KEY` es obligatoria para compilar):
 
 ```bash
 NEXT_PUBLIC_FIREBASE_API_KEY=
@@ -111,7 +105,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID=
 NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=
 ```
 
-> Si no se configuran estas variables, la app sigue funcionando: el glosario estático se muestra igual, pero las funciones que dependen de Firestore (biblioteca dinámica, propuestas, panel admin) quedan deshabilitadas.
+> Las variables `NEXT_PUBLIC_*` se **incrustan en el build** (son públicas por diseño en el SDK cliente de Firebase). Si `NEXT_PUBLIC_FIREBASE_API_KEY` no está definida, `next build` en producción falla con un mensaje claro en lugar de generar un sitio con la biblioteca dinámica rota.
 
 ### 4. Ejecutar en modo desarrollo
 
@@ -126,20 +120,33 @@ Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 ### 5. Generar una versión de producción
 
 ```bash
-pnpm build
-pnpm start
+pnpm build   # genera el sitio estático en out/
 ```
 
 ---
 
 ## 🔥 Configuración de Firebase
 
-El proyecto usa dos colecciones principales en Firestore:
+El sitio solo usa el SDK **cliente** de Firebase y únicamente **lee** la colección `commands` (comandos aprobados, lectura pública) desde `/biblioteca`.
 
-- **`commands`** — comandos aprobados y publicados (lectura pública, escritura solo admin).
-- **`commandProposals`** — propuestas enviadas desde `/proponer-comando`, en estado `pending` / `approved` / `rejected`.
+Las reglas (`firestore.rules`) también contemplan la colección `commandProposals` y un administrador por UID / colección `admins/`, heredadas del flujo anterior de propuestas, que ya no tiene interfaz en esta versión. Revisa y adapta `firestore.rules` a tu proyecto antes de usar tu propia instancia.
 
-Las reglas de seguridad (`firestore.rules`) definen que solo un usuario administrador —identificado por su UID o presente en la colección `admins/`— puede revisar, aprobar o rechazar propuestas. Antes de desplegar tu propia instancia, revisa y adapta `firestore.rules` a tu proyecto de Firebase, y considera añadir **Firebase App Check** al formulario público para prevenir spam automatizado.
+---
+
+## Despliegue en Enhance
+
+Sitio **100 % estático** (Next.js con `output: 'export'` y `trailingSlash: true`), publicado en `linuxkit.aulaciber.top` mediante *Desplegar desde GitHub*. No necesita ningún proceso Node en ejecución.
+
+| Ajuste | Valor |
+| --- | --- |
+| Script de compilación | `npx --yes pnpm@12.3.4 install --frozen-lockfile && npx pnpm@12.3.4 build` |
+| Directorio de publicación | `out` |
+| Runtime | Ninguno |
+| Variables de entorno | `NEXT_PUBLIC_FIREBASE_API_KEY` (obligatoria), `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`, `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID`, `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID` |
+
+Requisitos del entorno de compilación: Node.js 20.9 o superior (Next.js 16). Cada ruta se genera como `<ruta>/index.html` dentro de `out/`.
+
+Para compilar es **obligatoria** `NEXT_PUBLIC_FIREBASE_API_KEY`; si falta, el build falla a propósito. Valores de Firebase: consola de Firebase → Configuración del proyecto → Tus apps (SDK web). No inventes ni reutilices claves de otro proyecto.
 
 ---
 
@@ -168,7 +175,7 @@ Algunos comandos Linux —y en particular los relacionados con escaneo de redes,
 
 ## 🤝 Contribuir
 
-¿Tienes un comando útil que no está en el glosario? Puedes proponerlo directamente desde la app en [`/proponer-comando`](https://linux-lexicon.vercel.app/proponer-comando) — quedará pendiente de revisión antes de publicarse.
+¿Tienes un comando útil que no está en el glosario? Escribe a **hola@aulaciber.top** (ver [`/proponer-comando`](https://linuxkit.aulaciber.top/proponer-comando/)) — se revisa antes de publicarse.
 
 Para contribuir al código, puedes abrir un *issue* o un *pull request* en este repositorio.
 
@@ -176,7 +183,7 @@ Para contribuir al código, puedes abrir un *issue* o un *pull request* en este 
 
 ## 👨‍💻 Autor
 
-**Jesús Sanabria**
+**Jesús Sanabria** — Estudiante de ciberseguridad en FUSALMO
 
 Proyecto desarrollado como iniciativa personal enfocada en el aprendizaje de:
 
